@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Every Button Event</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --surface: #fffdf8;
+    --ink: #24211c;
+    --muted: #6f6a60;
+    --line: #d9d2c3;
+    --accent: #b8860b;
+    --flash: #f3d27a;
+    --btn: #2d4a6b;
+    --btn-ink: #ffffff;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1d23;
+      --surface: #252830;
+      --ink: #ece6d8;
+      --muted: #9d978a;
+      --line: #3a3e48;
+      --accent: #e3b341;
+      --flash: #5c4a18;
+      --btn: #3d6391;
+      --btn-ink: #ffffff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b1d23;
+    --surface: #252830;
+    --ink: #ece6d8;
+    --muted: #9d978a;
+    --line: #3a3e48;
+    --accent: #e3b341;
+    --flash: #5c4a18;
+    --btn: #3d6391;
+    --btn-ink: #ffffff;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1, h2 { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 700; }
+  h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 8px; line-height: 1.1; }
+  h2 { font-size: 1.6rem; margin: 48px 0 6px; }
+  .lede { color: var(--muted); max-width: 70ch; margin: 0 0 8px; }
+  .groupnote { color: var(--muted); margin: 0 0 16px; max-width: 75ch; }
+  code { color: var(--accent); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background-color 0.4s;
+  }
+  .card.fired { background: var(--flash); transition: none; }
+  .card .name { font-weight: 600; color: var(--accent); font-size: 15px; }
+  .card .how { color: var(--muted); font-size: 12.5px; min-height: 3em; }
+  .card button {
+    font: inherit;
+    font-weight: 600;
+    background: var(--btn);
+    color: var(--btn-ink);
+    border: none;
+    border-radius: 6px;
+    padding: 14px 10px;
+    cursor: pointer;
+    touch-action: auto;
+  }
+  .card button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .card .count { font-size: 12.5px; }
+  .card .details {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 3.2em;
+    margin: 0;
+  }
+
+  /* Firing-order tracer */
+  .tracer {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  #traceBtn {
+    font: inherit;
+    font-weight: 600;
+    font-size: 16px;
+    background: var(--btn);
+    color: var(--btn-ink);
+    border: none;
+    border-radius: 6px;
+    padding: 22px;
+    cursor: pointer;
+  }
+  #traceBtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .controls button {
+    font: inherit;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  #traceLog {
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    min-height: 120px;
+    max-height: 300px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .special-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card button[disabled] { opacity: 0.45; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Every event a button can listen for</h1>
+  <p class="lede">Each card below has one button with exactly one <code>addEventListener</code>. When that event fires, the card flashes, the counter goes up, and the details line shows the useful properties from the <code>event</code> object.</p>
+
+  <h2>Firing order tracer</h2>
+  <p class="groupnote">This one button listens for all 33 events at once and lists them in the order they arrive. Try a click, a double-click, a right-click, a tap, and pressing Enter or Space while it's focused.</p>
+  <div class="tracer">
+    <button id="traceBtn" type="button" draggable="true">Do anything to me</button>
+    <div class="controls">
+      <label><input type="checkbox" id="hideMoves" checked> Hide repeating move events (mousemove, pointermove, touchmove, drag)</label>
+      <button type="button" id="clearTrace">Clear log</button>
+    </div>
+    <pre id="traceLog">(events will appear here)</pre>
+  </div>
+
+  <div id="groups"></div>
+
+  <h2>Special cases</h2>
+  <div class="special-row">
+    <div class="card" id="disabledCard">
+      <div class="name">disabled button</div>
+      <div class="how">Has click, mousedown and keydown listeners, but <code>disabled</code> blocks them all. Try clicking it.</div>
+      <button type="button" disabled>I'm disabled, click me</button>
+      <div class="count">Times fired: <span>0</span></div>
+      <p class="details">Stays at 0 no matter what you do.</p>
+    </div>
+    <div class="card" id="submitCard">
+      <div class="name">submit (on a form)</div>
+      <div class="how">A button with no <code>type</code> inside a form is a submit button. Clicking it fires the form's <code>submit</code> event.</div>
+      <form id="demoForm">
+        <button style="width:100%">Click me to submit the form</button>
+      </form>
+      <div class="count">Times fired: <span>0</span></div>
+      <p class="details">preventDefault() stops the page reloading.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// ---------------------------------------------------------------
+// The list of every event. Each entry: [event name, button label, how to trigger it]
+// ---------------------------------------------------------------
+var GROUPS = [
+  {
+    title: "Mouse events",
+    note: "MouseEvent. These come from a mouse or trackpad (and, faked, after a touchscreen tap).",
+    events: [
+      ["mousedown",   "Press a mouse button on me",      "Fires the moment any mouse button goes down over the button. Try left, middle and right."],
+      ["mouseup",     "Press, then release on me",       "Fires when any mouse button is released over the button."],
+      ["click",       "Left-click me",                   "Primary button down and up on the same element. Also fires from Enter or Space when focused."],
+      ["auxclick",    "Middle-click or right-click me",  "Like click, but only for the non-primary buttons."],
+      ["dblclick",    "Double-click me",                 "Two fast primary clicks. Watch event.detail become 2."],
+      ["contextmenu", "Right-click me",                  "Would open the browser menu. This demo calls preventDefault(), so the menu is blocked."],
+      ["mouseover",   "Move the pointer onto me",        "Enters the button or any child inside it. Bubbles."],
+      ["mouseout",    "Move the pointer off me",         "Leaves the button or moves into a child. Bubbles."],
+      ["mouseenter",  "Move the pointer onto me",        "Enters the button's area. Ignores children, doesn't bubble."],
+      ["mouseleave",  "Move the pointer off me",         "Leaves the button's area. Ignores children, doesn't bubble."],
+      ["mousemove",   "Wiggle the pointer over me",      "Fires many times per second while the pointer moves over it."],
+      ["wheel",       "Scroll the wheel over me",        "WheelEvent. This demo calls preventDefault(), so the page won't scroll while over it."]
+    ]
+  },
+  {
+    title: "Pointer events",
+    note: "PointerEvent. One API for mouse, pen and touch; event.pointerType says which.",
+    events: [
+      ["pointerdown",   "Press on me (mouse, pen or finger)", "Contact starts or a button is pressed."],
+      ["pointerup",     "Press, then release on me",          "Contact ends or the button is released."],
+      ["pointermove",   "Move over me",                       "The pointer moves over the button."],
+      ["pointerover",   "Move onto me",                       "Enters, counting children. Bubbles."],
+      ["pointerout",    "Move off me",                        "Leaves, counting children. Bubbles."],
+      ["pointerenter",  "Move onto me",                       "Enters, ignoring children. Doesn't bubble."],
+      ["pointerleave",  "Move off me",                        "Leaves, ignoring children. Doesn't bubble."],
+      ["pointercancel", "Touch me, then drag to scroll the page", "The browser takes over the touch (usually to scroll). Touchscreens only."]
+    ]
+  },
+  {
+    title: "Touch events",
+    note: "TouchEvent. Only fire on touchscreens, so on a desktop these cards stay at 0.",
+    events: [
+      ["touchstart",  "Touch me with a finger",            "A finger lands on the button."],
+      ["touchmove",   "Touch me and slide your finger",    "A finger moves after touching the button."],
+      ["touchend",    "Touch me, then lift your finger",   "A finger lifts. Read event.changedTouches here."],
+      ["touchcancel", "Touch me, then let the system interrupt", "The system cancels the touch, e.g. an alert or notification appears. Rare and hard to trigger on purpose."]
+    ]
+  },
+  {
+    title: "Keyboard events",
+    note: "KeyboardEvent. Only fire while the button has focus, so press Tab until it's outlined (or click it first).",
+    events: [
+      ["keydown", "Focus me, then press any key",   "A key goes down. Repeats while held (event.repeat becomes true)."],
+      ["keyup",   "Focus me, press and release a key", "A key is released."]
+    ]
+  },
+  {
+    title: "Focus events",
+    note: "FocusEvent. Move focus with Tab / Shift+Tab or by clicking.",
+    events: [
+      ["focus",    "Tab to me or click me",           "The button becomes focused. Doesn't bubble."],
+      ["blur",     "Focus me, then click elsewhere",  "The button stops being focused. Doesn't bubble."],
+      ["focusin",  "Tab to me or click me",           "Same as focus, but bubbles."],
+      ["focusout", "Focus me, then click elsewhere",  "Same as blur, but bubbles."]
+    ]
+  },
+  {
+    title: "Drag events",
+    note: "DragEvent. These buttons have draggable=\"true\", which is required.",
+    events: [
+      ["dragstart", "Drag me",                  "Fires once when the drag starts."],
+      ["drag",      "Drag me around",           "Fires repeatedly the whole time it's being dragged."],
+      ["dragend",   "Drag me, then let go",     "Fires once when the drag finishes, dropped or cancelled."]
+    ]
+  }
+];
+
+// ---------------------------------------------------------------
+// Turn an event object into a short, readable description
+// ---------------------------------------------------------------
+function describe(e) {
+  var mods = [];
+  if (e.shiftKey) mods.push("Shift");
+  if (e.ctrlKey)  mods.push("Ctrl");
+  if (e.altKey)   mods.push("Alt");
+  if (e.metaKey)  mods.push("Meta");
+  var modText = mods.length ? "  modifiers: " + mods.join("+") : "";
+
+  if (e.type.indexOf("drag") === 0) {
+    return "clientX: " + e.clientX + "  clientY: " + e.clientY;
+  }
+  if (e.type === "wheel") {
+    return "deltaX: " + Math.round(e.deltaX) + "  deltaY: " + Math.round(e.deltaY) +
+           "  (deltaY > 0 = scrolling down)";
+  }
+  if (e.type.indexOf("pointer") === 0) {
+    return "pointerType: " + e.pointerType + "  pointerId: " + e.pointerId +
+           "  pressure: " + e.pressure.toFixed(2) + "\nbutton: " + e.button +
+           "  offsetX: " + Math.round(e.offsetX) + "  offsetY: " + Math.round(e.offsetY);
+  }
+  if (e.type.indexOf("touch") === 0) {
+    return "touches: " + e.touches.length + "  changedTouches: " + e.changedTouches.length;
+  }
+  if (e.type === "keydown" || e.type === "keyup") {
+    return 'key: "' + e.key + '"  code: "' + e.code + '"  repeat: ' + e.repeat + modText;
+  }
+  if (e.type === "focus" || e.type === "blur" || e.type === "focusin" || e.type === "focusout") {
+    var other = e.relatedTarget;
+    var name = other ? (other.textContent.trim().slice(0, 28) || other.tagName) : "null (outside the page or nothing)";
+    return "relatedTarget: " + name;
+  }
+  // Mouse events
+  return "button: " + e.button + " (0 left, 1 middle, 2 right)  buttons: " + e.buttons +
+         "\noffsetX: " + Math.round(e.offsetX) + "  offsetY: " + Math.round(e.offsetY) +
+         "  detail: " + e.detail + modText;
+}
+
+// ---------------------------------------------------------------
+// Build one card per event and attach exactly one listener to its button
+// ---------------------------------------------------------------
+var groupsDiv = document.getElementById("groups");
+
+GROUPS.forEach(function (group) {
+  var h2 = document.createElement("h2");
+  h2.textContent = group.title;
+  groupsDiv.appendChild(h2);
+
+  var note = document.createElement("p");
+  note.className = "groupnote";
+  note.textContent = group.note;
+  groupsDiv.appendChild(note);
+
+  var grid = document.createElement("div");
+  grid.className = "grid";
+  groupsDiv.appendChild(grid);
+
+  group.events.forEach(function (item) {
+    var eventName = item[0], label = item[1], how = item[2];
+
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<div class="name"></div><div class="how"></div>' +
+      '<button type="button"></button>' +
+      '<div class="count">Times fired: <span>0</span></div>' +
+      '<p class="details">Not fired yet.</p>';
+    card.querySelector(".name").textContent = eventName;
+    card.querySelector(".how").textContent = how;
+
+    var button = card.querySelector("button");
+    button.textContent = label;
+    if (group.title === "Drag events") button.draggable = true;
+
+    var countSpan = card.querySelector(".count span");
+    var detailsP = card.querySelector(".details");
+    var count = 0;
+
+    // THE LISTENER: one event name, one button
+    button.addEventListener(eventName, function (event) {
+      if (eventName === "contextmenu" || eventName === "wheel") event.preventDefault();
+      if (eventName === "dragstart") event.dataTransfer.setData("text/plain", "demo"); // Firefox needs data to start a drag
+
+      count++;
+      countSpan.textContent = count;
+      detailsP.textContent = describe(event);
+
+      card.classList.add("fired");
+      clearTimeout(card.flashTimer);
+      card.flashTimer = setTimeout(function () { card.classList.remove("fired"); }, 150);
+    }, { passive: false });   // passive:false lets wheel/touch call preventDefault()
+
+    grid.appendChild(card);
+  });
+});
+
+// ---------------------------------------------------------------
+// Firing-order tracer: one button, every event
+// ---------------------------------------------------------------
+var traceBtn = document.getElementById("traceBtn");
+var traceLog = document.getElementById("traceLog");
+var hideMoves = document.getElementById("hideMoves");
+var MOVE_EVENTS = ["mousemove", "pointermove", "touchmove", "drag"];
+var lines = [];
+var lastTime = 0;
+
+GROUPS.forEach(function (group) {
+  group.events.forEach(function (item) {
+    traceBtn.addEventListener(item[0], function (event) {
+      if (event.type === "contextmenu") event.preventDefault();
+      if (event.type === "dragstart") event.dataTransfer.setData("text/plain", "demo");
+      if (hideMoves.checked && MOVE_EVENTS.indexOf(event.type) >= 0) return;
+
+      var now = performance.now();
+      if (now - lastTime > 800 && lines.length) lines.push("   ---");  // gap = new action
+      lastTime = now;
+
+      lines.push(String(lines.length + 1).padStart(3, " ") + ". " + event.type);
+      if (lines.length > 300) lines = lines.slice(-300);
+      traceLog.textContent = lines.join("\n");
+      traceLog.scrollTop = traceLog.scrollHeight;
+    });
+  });
+});
+
+document.getElementById("clearTrace").addEventListener("click", function () {
+  lines = [];
+  traceLog.textContent = "(events will appear here)";
+});
+
+// ---------------------------------------------------------------
+// Special cases
+// ---------------------------------------------------------------
+var disabledBtn = document.querySelector("#disabledCard button");
+["click", "mousedown", "keydown"].forEach(function (name) {
+  disabledBtn.addEventListener(name, function () {
+    var span = document.querySelector("#disabledCard .count span");
+    span.textContent = Number(span.textContent) + 1;
+  });
+});
+
+var submitCount = 0;
+document.getElementById("demoForm").addEventListener("submit", function (event) {
+  event.preventDefault();   // without this, the page would reload
+  submitCount++;
+  document.querySelector("#submitCard .count span").textContent = submitCount;
+  document.querySelector("#submitCard .details").textContent =
+    "submit fired on the <form>, not the button. preventDefault() stopped the reload.";
+});
+</script>
+</body>
+</html>
